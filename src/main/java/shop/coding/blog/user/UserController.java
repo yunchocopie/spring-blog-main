@@ -1,5 +1,6 @@
 package shop.coding.blog.user;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,26 @@ public class UserController {
 
     // 자바는 final 변수는 반드시 초기화 되어야한다.
     private final UserRepository userRepository;
+    private final HttpSession session;
+
+    @PostMapping("/login")
+    public String login(UserRequest.LoginDTO requestDTO){
+        System.out.println(requestDTO);
+
+        if(requestDTO.getUsername().length() < 3){
+            return "error/400"; // ViewResolver 설정이 되어 있음 (앞 경로, 뒤 경로)
+        }
+
+        User user = userRepository.findByUsernameAndPassword(requestDTO);
+
+        if(user == null){ // 조회 안됨 (401)
+            return "error/401";
+        }else {
+            session.setAttribute("sessionUser", user); // 락카에 담음 (StateFul)
+        }
+
+        return "redirect:/";
+    }
 
     @PostMapping("/join")
     public String join(UserRequest.JoinDTO requestDTO){

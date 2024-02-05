@@ -10,4 +10,10 @@ public class UserRequest {
         private String password;
         private String email;
     }
+
+    @Data
+    public static class LoginDTO{
+        private String username;
+        private String password;
+    }
 }
