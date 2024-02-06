@@ -13,6 +13,8 @@ public class Board { // User 1 -> Board N
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(length = 30)
     private String title;
     private String content;
 
