@@ -3,6 +3,7 @@ package shop.coding.blog.board;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jdk.jfr.Frequency;
+import org.springframework.web.bind.annotation.PostMapping;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,28 @@ public class BoardController {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final HttpSession session;
+
+    @PostMapping("/board/{id}/delete")
+    public String delete(@PathVariable int id, HttpServletRequest request) { // body 데이터가 없어서 유효성 검사를 할 필요가 없다!
+        // 1. 인증 안되면 나가
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if (sessionUser == null) { // 401
+            return "redirect:/loginForm";
+        }
+
+        // 2. 권한 없으면 나가
+        Board board = boardRepository.findById(id);
+        if (board.getUserId() != sessionUser.getId()) {
+            request.setAttribute("status", 403);
+            request.setAttribute("msg", "게시글을 삭제할 권한이 없습니다");
+            return "error/40x";
+        }
+
+        // 3. 삭제 코드
+        boardRepository.deleteById(id);
+
+        return "redirect:/";
+    }
 
     @PostMapping("/board/save")
     public String save(BoardRequest.SaveDTO requestDTO, HttpServletRequest request) {

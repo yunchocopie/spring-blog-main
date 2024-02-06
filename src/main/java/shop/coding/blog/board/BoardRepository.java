@@ -27,4 +27,19 @@ public class BoardRepository {
 
         query.executeUpdate();
     }
+
+    public Board findById(int id) {
+        Query query = em.createNativeQuery("select * from board_tb where id = ?", Board.class);
+        query.setParameter(1, id);
+
+        Board board = (Board) query.getSingleResult();
+        return board;
+    }
+
+    @Transactional
+    public void deleteById(int id) {
+        Query query = em.createNativeQuery("delete from board_tb where id = ?");
+        query.setParameter(1, id);
+        query.executeUpdate();
+    }
 }
