@@ -15,18 +15,18 @@ public class UserController {
     private final HttpSession session;
 
     @PostMapping("/login")
-    public String login(UserRequest.LoginDTO requestDTO){
+    public String login(UserRequest.LoginDTO requestDTO) {
         System.out.println(requestDTO);
 
-        if(requestDTO.getUsername().length() < 3){
+        if (requestDTO.getUsername().length() < 3) {
             return "error/400"; // ViewResolver 설정이 되어 있음 (앞 경로, 뒤 경로)
         }
 
         User user = userRepository.findByUsernameAndPassword(requestDTO);
 
-        if(user == null){ // 조회 안됨 (401)
+        if (user == null) { // 조회 안됨 (401)
             return "error/401";
-        }else {
+        } else {
             session.setAttribute("sessionUser", user); // 락카에 담음 (StateFul)
         }
 
@@ -34,7 +34,7 @@ public class UserController {
     }
 
     @PostMapping("/join")
-    public String join(UserRequest.JoinDTO requestDTO){
+    public String join(UserRequest.JoinDTO requestDTO) {
         System.out.println(requestDTO);
 
         userRepository.save(requestDTO); // Request 한 값을 저장 시킨다.
@@ -58,6 +58,7 @@ public class UserController {
 
     @GetMapping("/logout")
     public String logout() {
+        session.invalidate(); // 세션을 완전히 삭제. 서랍 비우기.
         return "redirect:/";
     }
 }
