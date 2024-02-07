@@ -3,11 +3,10 @@ package shop.coding.blog.board;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jdk.jfr.Frequency;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Repository;
+import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import shop.coding.blog.user.User;
 import shop.coding.blog.user.UserRepository;
@@ -21,6 +20,52 @@ public class BoardController {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final HttpSession session;
+
+    @PostMapping("/board/{id}/update")
+    public String update(@PathVariable int id, BoardRequest.UpdateDTO requestDTO) { // @RequestBody 파싱이 JSON 방식으로 바꾼다!
+        // 부가 로직 - 인증 체크, 권한 체크
+        // 1. 인증 체크 (로그인 확인)
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        if (sessionUser == null) {
+            return "redirect:/loginForm";
+        }
+        // 2. 권한 체크 (게시자와 사용자의 권한 확인)
+        Board board = boardRepository.findById(id);
+        if (board.getUserId() != sessionUser.getId()) {
+            return "error/403";
+        }
+        if (board == null) {
+            return "error/400";
+        }
+
+        // 3. 핵심 로직 (모델에게 위임)
+        // update board_tb set title = ?, content = ? where id = ?
+        boardRepository.update(requestDTO, id);
+
+        return "redirect:/board/" + id;
+    }
+
+    // 책임 -> 조회해서 화면에 뿌릴려고!
+    @GetMapping("/board/{id}/updateForm")
+    public String updateForm(@PathVariable int id, HttpServletRequest request) {
+        // 인증 체크
+        User loginUser = (User) session.getAttribute("sessionUser");
+        if (loginUser == null) {
+            return "redirect:/loginForm";
+        }
+
+        // 권한 체크
+        // 모델 위임 (id로 board를 조회) // 조회를 해야 게시글의 주인 ID를 알 수 있다!
+        Board board = boardRepository.findById(id);
+        if (board.getUserId() != loginUser.getId()) {
+            return "error/403";
+        }
+
+        // 가방에 담기
+        request.setAttribute("board", board);
+
+        return "/board/updateForm";
+    }
 
     @PostMapping("/board/{id}/delete")
     public String delete(@PathVariable int id, HttpServletRequest request) { // body 데이터가 없어서 유효성 검사를 할 필요가 없다!
