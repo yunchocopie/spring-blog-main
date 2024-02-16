@@ -13,8 +13,29 @@ import java.util.List;
 public class BoardRepository {
     private final EntityManager em;
 
-    public List<Board> findAll() {
-        Query query = em.createNativeQuery("select * from board_tb order by id desc", Board.class);
+    public Long count(String keyword) {
+        // 검색된 자료의 수
+        Query query = em.createNativeQuery("select count(*) from board_tb where title like ?");
+        query.setParameter(1, "%" + keyword + "%");
+        return (Long) query.getSingleResult();
+    }
+
+    public Long count() {
+        Query query = em.createNativeQuery("select count(*) from board_tb");
+        return (Long) query.getSingleResult();
+    }
+
+    public List<Board> findAll(Integer page, String keyword) {
+        // 검색한 자료 조회
+        Query query = em.createNativeQuery("select * from board_tb where title like ? order by id desc limit ?, 3", Board.class);
+        query.setParameter(1, "%" + keyword + "%");
+        query.setParameter(2, page * 3);
+        return query.getResultList();
+    }
+
+    public List<Board> findAll(Integer page) {
+        Query query = em.createNativeQuery("select * from board_tb order by id desc limit ?, 3", Board.class);
+        query.setParameter(1, page * 3);
         return query.getResultList();
     }
 
