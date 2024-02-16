@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
+import shop.coding.blog.reply.ReplyRepository;
 import shop.coding.blog.user.User;
 import shop.coding.blog.user.UserRepository;
 
@@ -17,9 +18,10 @@ import java.util.List;
 @Controller
 public class BoardController {
 
-    private final BoardRepository boardRepository;
-    private final UserRepository userRepository;
     private final HttpSession session;
+    private final UserRepository userRepository;
+    private final BoardRepository boardRepository;
+    private final ReplyRepository replyRepository;
 
     @PostMapping("/board/{id}/update")
     public String update(@PathVariable int id, BoardRequest.UpdateDTO requestDTO) { // @RequestBody 파싱이 JSON 방식으로 바꾼다!
@@ -138,22 +140,15 @@ public class BoardController {
 
     @GetMapping("/board/{id}")
     public String detail(@PathVariable int id, HttpServletRequest request) {
-        // 1. 모델 진입 - 상세보기 데이터 가져오기
-        BoardResponse.DetailDTO responseDTO = userRepository.findById(id);
+        User sessionUser = (User) session.getAttribute("sessionUser");
+        BoardResponse.DetailDTO boardDTO = userRepository.findById(id);
+        boardDTO.isBoardOwner(sessionUser);
 
-        // 2. 페이지 주인 여부 체크 (board의 userId 와 sessionUser 의 id를 비교)
-        // 바디 데이터가 없으면 유효성 검사가 필요없다.
-        boolean pageOwner = false;
+        List<BoardResponse.ReplyDTO> replyDTOList = replyRepository.findByBoardId(id, sessionUser);
 
-        int boardUserId = responseDTO.getUserId();
-        User sessionUserId = (User) session.getAttribute("sessionUser");
+        request.setAttribute("board", boardDTO);
+        request.setAttribute("replyList", replyDTOList);
 
-        if (sessionUserId != null && boardUserId == sessionUserId.getId()) {
-            pageOwner = true;
-        }
-
-        request.setAttribute("board", responseDTO);
-        request.setAttribute("pageOwner", pageOwner);
         return "board/detail";
     }
 }

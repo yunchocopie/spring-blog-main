@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class User {
     @Id // PK 설정
     @GeneratedValue(strategy = GenerationType.IDENTITY) // auto_increment 어노테이션
-    private int id;
+    private Integer id;
     private String username;
     private String password;
     private String email;
