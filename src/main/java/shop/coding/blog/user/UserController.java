@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import shop.coding.blog._core.util.Script;
 
 @RequiredArgsConstructor // final 붙은 애들에 대한 생성자 생성
 @Controller
@@ -14,30 +16,31 @@ public class UserController {
     private final UserRepository userRepository;
     private final HttpSession session;
 
+
     @PostMapping("/login")
     public String login(UserRequest.LoginDTO requestDTO) {
-        System.out.println(requestDTO);
+        System.out.println(requestDTO); // toString -> @Data
 
         if (requestDTO.getUsername().length() < 3) {
-            return "error/400"; // ViewResolver 설정이 되어 있음 (앞 경로, 뒤 경로)
+            return "error/400"; // ViewResolver 설정이 되어 있음. (앞 경로, 뒤 경로)
         }
 
         User user = userRepository.findByUsernameAndPassword(requestDTO);
+        session.setAttribute("sessionUser", user); // 락카에 담음 (StateFul)
 
-        if (user == null) { // 조회 안됨 (401)
-            return "error/401";
-        } else {
-            session.setAttribute("sessionUser", user); // 락카에 담음 (StateFul)
-        }
-
-        return "redirect:/";
+        return "redirect:/"; // 컨트롤러가 존재하면 무조건 redirect 외우기
     }
 
     @PostMapping("/join")
     public String join(UserRequest.JoinDTO requestDTO) {
         System.out.println(requestDTO);
 
-        userRepository.save(requestDTO); // Request 한 값을 저장 시킨다.
+        // ssar을 조회해 보고 있으면!
+        try {
+            userRepository.save(requestDTO); // Request 한 값을 저장 시킨다.
+        } catch (Exception e) {
+            throw new RuntimeException("아이디가 중복되었어요");
+        }
         return "redirect:/loginForm";
     }
 
