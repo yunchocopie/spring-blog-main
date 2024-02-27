@@ -15,6 +15,25 @@ import java.util.List;
 public class LoveRepository {
     private final EntityManager em;
 
+    public Love findById(int id) {
+        Query query = em.createNativeQuery("select * from love_tb where id = ?", Love.class);
+        query.setParameter(1, id);
+
+        Love love = (Love) query.getSingleResult();
+        return love;
+    }
+
+    @Transactional
+    public void deleteById(int id) {
+        Query query = em.createNativeQuery("delete from love_tb where id = ?");
+        query.setParameter(1, id);
+
+        query.executeUpdate();
+    }
+
+
+
+
     public LoveResponse.DetailDTO findLove(int boardId) {
         String q = """
                 SELECT count(*) loveCount
@@ -84,20 +103,16 @@ public class LoveRepository {
     }
 
     @Transactional
-    public void save(BoardRequest.SaveDTO requestDTO, int userId) {
-        Query query = em.createNativeQuery("insert into board_tb(title, content, user_id, created_at) values(?, ?, ?, now())");
-        query.setParameter(1, requestDTO.getTitle());
-        query.setParameter(2, requestDTO.getContent());
-        query.setParameter(3, userId);
+    public Love save(LoveRequest.SaveDTO requestDTO, int sessionUserId) {
+        Query query = em.createNativeQuery("insert into love_tb(board_id, user_id, created_at) values(?,?, now())");
+        query.setParameter(1, requestDTO.getBoardId());
+        query.setParameter(2, sessionUserId);
 
         query.executeUpdate();
-    }
 
-    @Transactional
-    public void deleteById(int id) {
-        Query query = em.createNativeQuery("delete from board_tb where id = ?");
-        query.setParameter(1, id);
-        query.executeUpdate();
+        Query q = em.createNativeQuery("select * from love_tb where id = (select max(id) from love_tb)", Love.class); // 기본키를 알지 못하기 때문에 안에서 max 값을 알아내야함
+        Love love = (Love) q.getSingleResult();
+        return love;
     }
-
 }
+
