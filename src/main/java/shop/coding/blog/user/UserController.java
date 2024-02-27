@@ -2,10 +2,14 @@ package shop.coding.blog.user;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
+import shop.coding.blog._core.util.ApiUtil;
 import shop.coding.blog._core.util.Script;
 
 @RequiredArgsConstructor // final 붙은 애들에 대한 생성자 생성
@@ -16,16 +20,31 @@ public class UserController {
     private final UserRepository userRepository;
     private final HttpSession session;
 
+    @GetMapping("/api/username-same-check")
+    public @ResponseBody ApiUtil<?> usernameSameCheck(String username) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            return new ApiUtil<>(true); // 중복 없으면 true (가입 가능)
+        } else {
+            return new ApiUtil<>(false); // 중복 존재 (가입 불가능)
+        }
+
+    }
 
     @PostMapping("/login")
     public String login(UserRequest.LoginDTO requestDTO) {
         System.out.println(requestDTO); // toString -> @Data
 
         if (requestDTO.getUsername().length() < 3) {
-            return "error/400"; // ViewResolver 설정이 되어 있음. (앞 경로, 뒤 경로)
+            throw new RuntimeException("유저네임 길이가 너무 짧아요");
         }
 
-        User user = userRepository.findByUsernameAndPassword(requestDTO);
+        User user = userRepository.findByUsername(requestDTO.getUsername());
+
+        if (!BCrypt.checkpw(requestDTO.getPassword(), user.getPassword())) {
+            throw new RuntimeException("패스워드가 틀렸습니다.");
+        }
+
         session.setAttribute("sessionUser", user); // 락카에 담음 (StateFul)
 
         return "redirect:/"; // 컨트롤러가 존재하면 무조건 redirect 외우기
@@ -34,6 +53,10 @@ public class UserController {
     @PostMapping("/join")
     public String join(UserRequest.JoinDTO requestDTO) {
         System.out.println(requestDTO);
+
+        String rawPassword = requestDTO.getPassword();
+        String encPassword = BCrypt.hashpw(rawPassword, BCrypt.gensalt());
+        requestDTO.setPassword(encPassword);
 
         // ssar을 조회해 보고 있으면!
         try {

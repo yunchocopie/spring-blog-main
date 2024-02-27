@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
+import shop.coding.blog.Love.LoveRepository;
+import shop.coding.blog.Love.LoveResponse;
 import shop.coding.blog.reply.ReplyRepository;
 import shop.coding.blog.user.User;
 import shop.coding.blog.user.UserRepository;
@@ -22,6 +24,7 @@ public class BoardController {
     private final UserRepository userRepository;
     private final BoardRepository boardRepository;
     private final ReplyRepository replyRepository;
+    private final LoveRepository loveRepository;
 
     @PostMapping("/board/{id}/update")
     public String update(@PathVariable int id, BoardRequest.UpdateDTO requestDTO) { // @RequestBody 파싱이 JSON 방식으로 바꾼다!
@@ -180,13 +183,24 @@ public class BoardController {
     @GetMapping("/board/{id}")
     public String detail(@PathVariable int id, HttpServletRequest request) {
         User sessionUser = (User) session.getAttribute("sessionUser");
-        BoardResponse.DetailDTO boardDTO = userRepository.findById(id);
+        BoardResponse.DetailDTO boardDTO = boardRepository.findByIdWithUser(id);
         boardDTO.isBoardOwner(sessionUser);
 
         List<BoardResponse.ReplyDTO> replyDTOList = replyRepository.findByBoardId(id, sessionUser);
-
         request.setAttribute("board", boardDTO);
         request.setAttribute("replyList", replyDTOList);
+
+        if(sessionUser == null){
+            LoveResponse.DetailDTO loveDetailDTO = loveRepository.findLove(id);
+            request.setAttribute("love", loveDetailDTO);
+        }else{
+            LoveResponse.DetailDTO loveDetailDTO = loveRepository.findLove(id, sessionUser.getId());
+            request.setAttribute("love", loveDetailDTO);
+        }
+
+        // fas fa-heart text-danger
+        // far fa-heart
+        // request.setAttribute("css", "far fa-heart");
 
         return "board/detail";
     }
